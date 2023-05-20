@@ -839,6 +839,8 @@ int runRadio(void) {
     uint8_t nrow=0;
     UTIL_LCD_DisplayStringAtLine(nrow++, (uint8_t*)"Start receiving...");
 
+#define PAYLOAD_LENGTH 6
+
     while (1) {
         //
         // Constantly poll the status of the RX FIFO and get a payload if FIFO is not empty
@@ -867,7 +869,26 @@ int runRadio(void) {
             uint8_t *buf=nRF24_payload;
             uint8_t str[64]={0};
             FloatHex fh;
+/*
+ 		    // Prepare data packet
+			payload_length = PAYLOAD_LENGTH; // MANDATORY assigned at each packet sending
+			uint32_t val = pos;
+			nRF24_payload[0] = val & 0xff; val >>= 8;
+			nRF24_payload[1] = val & 0xff;
 
+			val =*(__IO uint32_t*)(4*pos+CAMERA_FRAME_BUFFER);
+
+	    	for (uint32_t i = 2; i < payload_length; i++) {
+	    		nRF24_payload[i] = val & 0xff;  val >>= 8;
+	    	}
+ */
+            uint32_t pos = (nRF24_payload[1]<<8) | nRF24_payload[0];
+
+            uint32_t color1_RGB565   = (nRF24_payload[3] << 8) | nRF24_payload[2];
+            uint32_t color2_RGB565   = (nRF24_payload[5] << 8) | nRF24_payload[4];
+            *(__IO uint32_t*) (SDRAM_BANK_ADDR + 4*pos) =  (color2_RGB565<<16) | color1_RGB565;
+
+#ifdef __DEBUG__
             for (i = 0; i < payload_length; i++) {
                 uint8_t ch = *buf++;
                 fh.u8[i] = ch;
@@ -882,6 +903,7 @@ int runRadio(void) {
                 UTIL_LCD_Clear(UTIL_LCD_COLOR_BLACK);
             	nrow=0;
             }
+#endif
         }
     }
 // #pragma clang diagnostic pop

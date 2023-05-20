@@ -98,7 +98,8 @@ int main(void)
 
   /*##-1- LCD Initialization #################################################*/
   /* Initialize the LCD */
-  BSP_LCD_Init(0, LCD_ORIENTATION_LANDSCAPE);
+  //BSP_LCD_Init(0, LCD_ORIENTATION_LANDSCAPE);
+  BSP_LCD_InitEx(0, LCD_ORIENTATION_LANDSCAPE, LCD_PIXEL_FORMAT_RGB565, LCD_DEFAULT_WIDTH, LCD_DEFAULT_HEIGHT);
   UTIL_LCD_SetFuncDriver(&LCD_Driver);
 
   /* Set Foreground Layer */
@@ -154,27 +155,27 @@ int main(void)
       UTIL_LCD_Clear(UTIL_LCD_COLOR_BLACK);
       HAL_Delay(1000);
 
-      for (uint16_t x=0; x < x_size; x++)
-          for (uint16_t y=0; y < y_size; y++){
-        	  uint32_t offset = 4*(x_size*y + x);
-        	  *(__IO uint32_t*) (SDRAM_BANK_ADDR + offset) = 0xff0000aa;
-        	  if (x<y) {
-        	     *(__IO uint32_t*) (SDRAM_BANK_ADDR + offset) = 0xffaa0000;
-        	     UTIL_LCD_SetPixel(x, y, 0xffaa0000);
-        	  }
-          }
-      HAL_Delay(1000);
+#define no__DEBUG__
+#ifdef __DEBUG__
+	LCD_DisplayOn();
+	uint32_t Im_size = 480*272*2/4; // size in 4-byte words
+	for (uint32_t pos=0; pos<Im_size; pos++){
+	    *(__IO uint32_t*)(4*pos+SDRAM_BANK_ADDR) = 0xff00ff00;  // writes 2 pixels at the same time
+	}
+	HAL_Delay(5000);
+	LCD_DisplayOff(); // mandatory to avoid parasites on the LCD screen
+#endif
 
-#define CONVERTRGB5652ARGB8888(Color)(((((((Color >> 11) & 0x1FU) * 527) + 23) >> 6) << 16) |\
-                                     ((((((Color >> 5) & 0x3FU) * 259) + 33) >> 6) << 8) |\
-                                     ((((Color & 0x1FU) * 527) + 23) >> 6) | 0xFF000000)
-
-      for (uint32_t i=0; i<65280; i++){
-    	  *(__IO uint32_t*) (SDRAM_BANK_ADDR + 4*i)         = CONVERTRGB5652ARGB8888(RGB565_480x272[i]);
-    	  *(__IO uint32_t*) (SDRAM_BANK_ADDR + 4*(i+65280)) = CONVERTRGB5652ARGB8888(RGB565_480x272[i]);
-      }
-
-      HAL_Delay(1000);
+//#define CONVERTRGB5652ARGB8888(Color)(((((((Color >> 11) & 0x1FU) * 527) + 23) >> 6) << 16) |\
+//                                     ((((((Color >> 5) & 0x3FU) * 259) + 33) >> 6) << 8) |\
+//                                     ((((Color & 0x1FU) * 527) + 23) >> 6) | 0xFF000000)
+//
+//      for (uint32_t i=0; i<65280; i++){
+//    	  *(__IO uint32_t*) (SDRAM_BANK_ADDR + 4*i)         = CONVERTRGB5652ARGB8888(RGB565_480x272[i]);
+//    	  *(__IO uint32_t*) (SDRAM_BANK_ADDR + 4*(i+65280)) = CONVERTRGB5652ARGB8888(RGB565_480x272[i]);
+//      }
+//
+//      HAL_Delay(1000);
 
   }
 }
